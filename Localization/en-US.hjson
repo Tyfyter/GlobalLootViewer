@@ -1,0 +1,12 @@
+Mods.GlobalLootViewer.NPCs.GlobalLootViewerNPC.DisplayName: Global Loot
+Bestiary_ItemDropConditions: {
+	"Hardmode": "Drops in Hardmode"
+	"YoyoCascade": "Drops near the underworld after defeating Skeletron but before Hardmode"
+	"YoyosAmarok": "Drops in the Hardmode Snow"
+	"YoyosYelets": "Drops in the Jungle after defeating any Mech Boss"
+	"YoyosKraken": "Drops in the Dungeon after defeating Plantera"
+	"YoyosHelFire": "Drops near the underworld in Hardmode"
+	"HalloweenWeapons": "Drops in early gameplay during Halloween"
+	"HalloweenGoodieBagDrop": "Drops during Halloween season"
+	"XmasPresentDrop": "{$Bestiary_ItemDropConditions.IsChristmas}"
+}

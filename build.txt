@@ -1,0 +1,3 @@
+displayName = Global Loot Viewer
+author = Tyfyter2002
+version = 1.0
