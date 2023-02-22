@@ -74,47 +74,49 @@ namespace GlobalLootViewer {
 		}
 		private void UIBestiaryInfoItemLine_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.orig_ctor orig, Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine self, DropRateInfo info, BestiaryUICollectionInfo uiinfo, float textScale) {
 			orig(self, info, uiinfo, textScale);
+			if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement0) {
+				if (infoElement0.NetId == GlobalLootViewerNPC.ID || infoElement0.NetId == HiddenLootViewerNPC.ID) {
+					self.OnRightClick += (ev, el) => {
+						if (LootViewerConfig.HiddenEntries.Contains(info.itemId)) {
+							LootViewerConfig.HiddenEntries.Remove(info.itemId);
+						} else {
+							LootViewerConfig.HiddenEntries.Add(info.itemId);
+						}
+						LootViewerConfig.Instance.Save();
+						if (el.Parent is not null) {
+							Terraria.UI.UIElement parent = el.Parent;
+							float diff = el.Height.Pixels + 4 + el.MarginBottom;
+							int selfIndex = 0;
+							int index = 0;
+							foreach (var sibling in parent.Children) {
+								if (sibling == el) {
+									selfIndex = index;
+								}
+								index++;
+							}
+							parent.RemoveChild(el);
+							index = 0;
+							foreach (var sibling in parent.Children) {
+								if (index >= selfIndex) {
+									//sibling.Top.Pixels -= diff;
+									sibling.MarginTop -= diff;
+									sibling.Recalculate();
+									break;
+								}
+								index++;
+							}
+							parent.Recalculate();
+							parent.Parent.Recalculate();
+							parent.Parent.Parent.Recalculate();
+						}
+					};
+				}
+			}
 			if (!LootViewerConfig.HighlightConditional) return;
 			if ((info.conditions?.Count ?? 0) > 0) {
 				NPC npc = new();
 				if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 					npc.SetDefaults(infoElement.NetId);
-					if (infoElement.NetId == GlobalLootViewerNPC.ID || infoElement.NetId == HiddenLootViewerNPC.ID) {
-						self.OnRightClick += (ev, el) => {
-							if (LootViewerConfig.HiddenEntries.Contains(info.itemId)) {
-								LootViewerConfig.HiddenEntries.Remove(info.itemId);
-							} else {
-								LootViewerConfig.HiddenEntries.Add(info.itemId);
-							}
-							LootViewerConfig.Instance.Save();
-							if (el.Parent is not null) {
-								Terraria.UI.UIElement parent = el.Parent;
-								float diff = el.Height.Pixels + 4 + el.MarginBottom;
-								int selfIndex = 0;
-								int index = 0;
-								foreach (var sibling in parent.Children) {
-									if (sibling == el) {
-										selfIndex = index;
-									}
-									index++;
-								}
-								parent.RemoveChild(el);
-								index = 0;
-								foreach (var sibling in parent.Children) {
-									if (index >= selfIndex) {
-										//sibling.Top.Pixels -= diff;
-										sibling.MarginTop -= diff;
-										sibling.Recalculate();
-										break;
-									}
-									index++;
-								}
-								parent.Recalculate();
-								parent.Parent.Recalculate();
-								parent.Parent.Parent.Recalculate();
-							}
-						};
-					}
 				}
 				npc.position = Main.LocalPlayer.position;
 				npc.target = Main.myPlayer;
