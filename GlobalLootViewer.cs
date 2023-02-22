@@ -17,6 +17,10 @@ using OnConditions = On.Terraria.GameContent.ItemDropRules.Conditions;
 
 namespace GlobalLootViewer {
 	public class GlobalLootViewer : Mod {
+		public HashSet<Type> IgnoreWhenHighlighting { get; private set; }
+		public GlobalLootViewer() {
+			IgnoreWhenHighlighting = new();
+		}
 		public override void Load() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
 			On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
@@ -47,12 +51,25 @@ namespace GlobalLootViewer {
 			OnConditions.IsChristmas.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
 			OnConditions.XmasPresentDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
 			On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.ctor += UIBestiaryInfoItemLine_ctor;
+			IgnoreWhenHighlighting.Add(typeof(Conditions.MissingTwin));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.EmpressOfLightIsGenuinelyEnraged));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.NamedNPC));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.NotFromStatue));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.NotExpert));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.IsCorruption));
+			IgnoreWhenHighlighting.Add(typeof(Conditions.IsCrimson));
+			if (ModLoader.TryGetMod("AltLibrary", out Mod altLib)) {
+				if (altLib.Code.GetType("CorroCrimDropCondition") is Type corroCrim) IgnoreWhenHighlighting.Add(corroCrim);
+				if (altLib.Code.GetType("EvilAltDropCondition") is Type evilAlt) IgnoreWhenHighlighting.Add(evilAlt);
+				if (altLib.Code.GetType("HallowAltDropCondition") is Type hallowAlt) IgnoreWhenHighlighting.Add(hallowAlt);
+				if (altLib.Code.GetType("HallowDropCondition") is Type hallow) IgnoreWhenHighlighting.Add(hallow);
+			}
 		}
 		public override void Unload() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
 			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
 		}
-		private void BestiaryDatabase_ExtractDropsForNPC(On.Terraria.GameContent.Bestiary.BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
+		private static void BestiaryDatabase_ExtractDropsForNPC(On.Terraria.GameContent.Bestiary.BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
 			if (npcId != GlobalLootViewerNPC.ID && npcId != HiddenLootViewerNPC.ID) {
 				orig(self, dropsDatabase, npcId);
 			} else {
@@ -69,7 +86,7 @@ namespace GlobalLootViewer {
 				bestiaryEntry.Info.AddRange(ruleList.Select(info => new ItemDropBestiaryInfoElement(info)));
 			}
 		}
-		private string MechanicalBossesDummyCondition_GetConditionDescription(OnConditions.MechanicalBossesDummyCondition.orig_GetConditionDescription orig, Conditions.MechanicalBossesDummyCondition self) {
+		private static string MechanicalBossesDummyCondition_GetConditionDescription(OnConditions.MechanicalBossesDummyCondition.orig_GetConditionDescription orig, Conditions.MechanicalBossesDummyCondition self) {
 			return Language.GetTextValue("Bestiary_ItemDropConditions.Hardmode");
 		}
 		private void UIBestiaryInfoItemLine_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.orig_ctor orig, Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine self, DropRateInfo info, BestiaryUICollectionInfo uiinfo, float textScale) {
@@ -130,12 +147,7 @@ namespace GlobalLootViewer {
 				bool? canDrop = null;
 				try {
 					for (int i = 0; i < info.conditions.Count; i++) {
-						if (info.conditions[i] is 
-							Conditions.MissingTwin
-							or Conditions.EmpressOfLightIsGenuinelyEnraged
-							or Conditions.NamedNPC
-							or Conditions.NotFromStatue
-							or Conditions.NotExpert) continue;
+						if (IgnoreWhenHighlighting.Contains(info.conditions[i].GetType())) continue;
 						if (!info.conditions[i].CanDrop(dropInfo)) {
 							canDrop = false;
 							break;
@@ -162,7 +174,7 @@ namespace GlobalLootViewer {
 			_droprateInfo ??= typeof(ItemDropBestiaryInfoElement).GetField("_droprateInfo", BindingFlags.NonPublic | BindingFlags.Instance);
 			return (DropRateInfo)_droprateInfo.GetValue(self);
 		}
-		private Terraria.UI.UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
+		private static Terraria.UI.UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
 			if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 				if (infoElement.NetId == GlobalLootViewerNPC.ID) {
 					if (LootViewerConfig.HiddenEntries.Contains(GetDropRateInfo(self).itemId)) {
