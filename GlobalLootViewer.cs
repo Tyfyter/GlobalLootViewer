@@ -1,4 +1,6 @@
+using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -41,6 +43,7 @@ namespace GlobalLootViewer {
 			OnConditions.HalloweenWeapons.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.halloween;
 			OnConditions.IsChristmas.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
 			OnConditions.XmasPresentDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
+			On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.ctor += UIBestiaryInfoItemLine_ctor;
 		}
 		public override void Unload() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
@@ -66,6 +69,39 @@ namespace GlobalLootViewer {
 		private string MechanicalBossesDummyCondition_GetConditionDescription(OnConditions.MechanicalBossesDummyCondition.orig_GetConditionDescription orig, Conditions.MechanicalBossesDummyCondition self) {
 			return Language.GetTextValue("Bestiary_ItemDropConditions.Hardmode");
 		}
+		private void UIBestiaryInfoItemLine_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.orig_ctor orig, Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine self, DropRateInfo info, BestiaryUICollectionInfo uiinfo, float textScale) {
+			orig(self, info, uiinfo, textScale);
+			if (!LootViewerConfig.HighlightConditional) return;
+			if ((info.conditions?.Count ?? 0) > 0) {
+				NPC npc = new();
+				if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
+					npc.SetDefaults(infoElement.NetId);
+				}
+				DropAttemptInfo dropInfo = default(DropAttemptInfo);
+				dropInfo.player = Main.LocalPlayer;
+				dropInfo.npc = npc;
+				dropInfo.IsExpertMode = Main.expertMode;
+				dropInfo.IsMasterMode = Main.masterMode;
+				dropInfo.IsInSimulation = false;
+				dropInfo.rng = Main.rand;
+				bool canDrop = true;
+				try {
+					for (int i = 0; i < info.conditions.Count; i++) {
+						if (!info.conditions[i].CanDrop(dropInfo)) {
+							canDrop = false;
+							break;
+						}
+					}
+					if (canDrop) {
+						self.BackgroundColor = new Color(194, 175, 10);
+					} else {
+						self.BackgroundColor = new Color(97, 5, 5, 255);
+					}
+				} catch (Exception) {
+					self.BackgroundColor = new Color(193, 10, 194);
+				}
+			}
+		}
 	}
 	public class GlobalLootViewerNPC : ModNPC {
 		public static int ID { get; private set; }
@@ -75,6 +111,7 @@ namespace GlobalLootViewer {
 		}
 		public override void SetDefaults() {
 			NPC.width = NPC.height = 30;
+			NPC.value = 250;
 		}
 		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
 			bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
@@ -94,7 +131,13 @@ namespace GlobalLootViewer {
 		[Label("Hide inactive drops")]
 		[DefaultValue(true)]
 		public bool hideInactive = true;
+		[Label("Highlight conditional drops")]
+		[Tooltip("Changes the background color of conditional drops based on whether or not they can currently drop")]
+		[DefaultValue(true)]
+		public bool highlightConditional = true;
 		[JsonIgnore]
 		public static bool HideInactive => Instance.hideInactive;
+		[JsonIgnore]
+		public static bool HighlightConditional => Instance.highlightConditional;
 	}
 }
