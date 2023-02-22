@@ -127,18 +127,30 @@ namespace GlobalLootViewer {
 				dropInfo.IsMasterMode = Main.masterMode;
 				dropInfo.IsInSimulation = false;
 				dropInfo.rng = Main.rand;
-				bool canDrop = true;
+				bool? canDrop = null;
 				try {
 					for (int i = 0; i < info.conditions.Count; i++) {
+						if (info.conditions[i] is 
+							Conditions.MissingTwin
+							or Conditions.EmpressOfLightIsGenuinelyEnraged
+							or Conditions.NamedNPC
+							or Conditions.NotFromStatue
+							or Conditions.NotExpert) continue;
 						if (!info.conditions[i].CanDrop(dropInfo)) {
 							canDrop = false;
 							break;
+						} else {
+							canDrop = true;
 						}
 					}
-					if (canDrop) {
+					switch (canDrop) {
+						case true:
 						self.BackgroundColor = new Color(194, 175, 10);
-					} else {
+						break;
+
+						case false:
 						self.BackgroundColor = new Color(97, 5, 5, 255);
+						break;
 					}
 				} catch (Exception) {
 					self.BackgroundColor = new Color(193, 10, 194);
