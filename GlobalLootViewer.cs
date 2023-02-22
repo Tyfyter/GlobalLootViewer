@@ -3,7 +3,9 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Terraria;
 using Terraria.GameContent.Bestiary;
 using Terraria.GameContent.ItemDropRules;
@@ -17,6 +19,7 @@ namespace GlobalLootViewer {
 	public class GlobalLootViewer : Mod {
 		public override void Load() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
+			On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
 			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription += MechanicalBossesDummyCondition_GetConditionDescription;
 			OnConditions.MechanicalBossesDummyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
 			OnConditions.SoulOfNight.CanShowItemDropInUI += (_, _) => Main.hardMode;
@@ -50,7 +53,7 @@ namespace GlobalLootViewer {
 			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
 		}
 		private void BestiaryDatabase_ExtractDropsForNPC(On.Terraria.GameContent.Bestiary.BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
-			if (npcId != GlobalLootViewerNPC.ID) {
+			if (npcId != GlobalLootViewerNPC.ID && npcId != HiddenLootViewerNPC.ID) {
 				orig(self, dropsDatabase, npcId);
 			} else {
 				BestiaryEntry bestiaryEntry = self.FindEntryByNPCID(npcId);
@@ -76,7 +79,45 @@ namespace GlobalLootViewer {
 				NPC npc = new();
 				if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 					npc.SetDefaults(infoElement.NetId);
+					if (infoElement.NetId == GlobalLootViewerNPC.ID || infoElement.NetId == HiddenLootViewerNPC.ID) {
+						self.OnRightClick += (ev, el) => {
+							if (LootViewerConfig.HiddenEntries.Contains(info.itemId)) {
+								LootViewerConfig.HiddenEntries.Remove(info.itemId);
+							} else {
+								LootViewerConfig.HiddenEntries.Add(info.itemId);
+							}
+							LootViewerConfig.Instance.Save();
+							if (el.Parent is not null) {
+								Terraria.UI.UIElement parent = el.Parent;
+								float diff = el.Height.Pixels + 4 + el.MarginBottom;
+								int selfIndex = 0;
+								int index = 0;
+								foreach (var sibling in parent.Children) {
+									if (sibling == el) {
+										selfIndex = index;
+									}
+									index++;
+								}
+								parent.RemoveChild(el);
+								index = 0;
+								foreach (var sibling in parent.Children) {
+									if (index >= selfIndex) {
+										//sibling.Top.Pixels -= diff;
+										sibling.MarginTop -= diff;
+										sibling.Recalculate();
+										break;
+									}
+									index++;
+								}
+								parent.Recalculate();
+								parent.Parent.Recalculate();
+								parent.Parent.Parent.Recalculate();
+							}
+						};
+					}
 				}
+				npc.position = Main.LocalPlayer.position;
+				npc.target = Main.myPlayer;
 				DropAttemptInfo dropInfo = default(DropAttemptInfo);
 				dropInfo.player = Main.LocalPlayer;
 				dropInfo.npc = npc;
@@ -102,25 +143,69 @@ namespace GlobalLootViewer {
 				}
 			}
 		}
+		static FieldInfo _droprateInfo;
+		static DropRateInfo GetDropRateInfo(ItemDropBestiaryInfoElement self) {
+			_droprateInfo ??= typeof(ItemDropBestiaryInfoElement).GetField("_droprateInfo", BindingFlags.NonPublic | BindingFlags.Instance);
+			return (DropRateInfo)_droprateInfo.GetValue(self);
+		}
+		private Terraria.UI.UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
+			if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
+				if (infoElement.NetId == GlobalLootViewerNPC.ID) {
+					if (LootViewerConfig.HiddenEntries.Contains(GetDropRateInfo(self).itemId)) {
+						return null;
+					}
+				} else if (infoElement.NetId == HiddenLootViewerNPC.ID) {
+					if (!LootViewerConfig.HiddenEntries.Contains(GetDropRateInfo(self).itemId)) {
+						return null;
+					}
+				}
+			}
+			return orig(self, info);
+		}
 	}
 	public class GlobalLootViewerNPC : ModNPC {
+		public override string Texture => "GlobalLootViewer/icon_small";
 		public static int ID { get; private set; }
 		public override void SetStaticDefaults() {
-			DisplayName.SetDefault("Global Loot Viewer NPC");
+			DisplayName.SetDefault("Global Loot Viewer");
 			ID = Type;
 		}
 		public override void SetDefaults() {
 			NPC.width = NPC.height = 30;
+			NPC.lifeMax = 250;
 			NPC.value = 250;
 		}
 		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
 			bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
 		}
 	}
+	public class HiddenLootViewerNPC : ModNPC {
+		public override string Texture => "GlobalLootViewer/icon_small";
+		public static int ID { get; private set; }
+		public override void SetStaticDefaults() {
+			DisplayName.SetDefault("Global Loot Viewer (Hidden Loot)");
+			ID = Type;
+		}
+		public override void SetDefaults() {
+			NPC.width = NPC.height = 30;
+			NPC.lifeMax = 250;
+			NPC.value = 250;
+		}
+		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
+			bestiaryEntry.UIInfoProvider = new HiddenEnemyUICollectionInfoProvider();
+		}
+	}
 	public class UnlockedEnemyUICollectionInfoProvider : IBestiaryUICollectionInfoProvider {
 		public BestiaryUICollectionInfo GetEntryUICollectionInfo() {
 			BestiaryUICollectionInfo result = default(BestiaryUICollectionInfo);
 			result.UnlockState = BestiaryEntryUnlockState.CanShowDropsWithDropRates_4;
+			return result;
+		}
+	}
+	public class HiddenEnemyUICollectionInfoProvider : IBestiaryUICollectionInfoProvider {
+		public BestiaryUICollectionInfo GetEntryUICollectionInfo() {
+			BestiaryUICollectionInfo result = default(BestiaryUICollectionInfo);
+			result.UnlockState = LootViewerConfig.HiddenEntries.Count > 0 ? BestiaryEntryUnlockState.CanShowDropsWithDropRates_4 : BestiaryEntryUnlockState.NotKnownAtAll_0;
 			return result;
 		}
 	}
@@ -135,9 +220,52 @@ namespace GlobalLootViewer {
 		[Tooltip("Changes the background color of conditional drops based on whether or not they can currently drop")]
 		[DefaultValue(true)]
 		public bool highlightConditional = true;
+		[Label("Hidden entries")]
+		[Tooltip("A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)\n"
+			+ "unfortunately due to how overly complicated changing a mod config is")]
+		public List<string> HiddenEntriesStrings {
+			get {
+				hiddenEntries ??= new();
+				List<string> strings = new(hiddenEntries.Count);
+				for (int i = 0; i < hiddenEntries.Count; i++) {
+					if (hiddenEntries[i] < ItemID.Count) {
+						strings.Add($"Terraria:{ItemID.Search.GetName(hiddenEntries[i])}");
+					} else {
+						ModItem it = ItemLoader.GetItem(hiddenEntries[i]);
+						strings.Add($"{it.Mod.Name}:{it.Name}");
+					}
+				}
+				return strings;
+			}
+			set {
+				hiddenEntries = new(value.Count);
+				for (int i = 0; i < value.Count; i++) {
+					string[] s = value[i].Split(':');
+					if (s[0] == "Terraria") {
+						hiddenEntries.Add(ItemID.Search.GetId(s[1]));
+					} else {
+						if(ModContent.TryFind(s[0], s[1], out ModItem it)) {
+							hiddenEntries.Add(it.Type);
+						}
+					}
+				}
+			}
+		}
+
+		[JsonIgnore]
+		public List<int> hiddenEntries;
 		[JsonIgnore]
 		public static bool HideInactive => Instance.hideInactive;
 		[JsonIgnore]
 		public static bool HighlightConditional => Instance.highlightConditional;
+		[JsonIgnore]
+		public static List<int> HiddenEntries => Instance.hiddenEntries ??= new();
+		internal void Save() {
+			Directory.CreateDirectory(ConfigManager.ModConfigPath);
+			string filename = Mod.Name + "_" + Name + ".json";
+			string path = Path.Combine(ConfigManager.ModConfigPath, filename);
+			string json = JsonConvert.SerializeObject(this, ConfigManager.serializerSettings);
+			File.WriteAllText(path, json);
+		}
 	}
 }
