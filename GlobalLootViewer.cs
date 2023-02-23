@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -9,10 +10,12 @@ using System.Reflection;
 using Terraria;
 using Terraria.GameContent.Bestiary;
 using Terraria.GameContent.ItemDropRules;
+using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Config;
+using Terraria.UI;
 using OnConditions = On.Terraria.GameContent.ItemDropRules.Conditions;
 
 namespace GlobalLootViewer {
@@ -24,6 +27,7 @@ namespace GlobalLootViewer {
 		public override void Load() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
 			On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
+			On.Terraria.GameContent.Bestiary.NPCPortraitInfoElement.ProvideUIElement += NPCPortraitInfoElement_ProvideUIElement;
 			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription += MechanicalBossesDummyCondition_GetConditionDescription;
 			OnConditions.MechanicalBossesDummyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
 			OnConditions.SoulOfNight.CanShowItemDropInUI += (_, _) => Main.hardMode;
@@ -174,7 +178,7 @@ namespace GlobalLootViewer {
 			_droprateInfo ??= typeof(ItemDropBestiaryInfoElement).GetField("_droprateInfo", BindingFlags.NonPublic | BindingFlags.Instance);
 			return (DropRateInfo)_droprateInfo.GetValue(self);
 		}
-		private static Terraria.UI.UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
+		private static UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
 			if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 				if (infoElement.NetId == GlobalLootViewerNPC.ID) {
 					if (LootViewerConfig.HiddenEntries.Contains(GetDropRateInfo(self).itemId)) {
@@ -187,6 +191,49 @@ namespace GlobalLootViewer {
 				}
 			}
 			return orig(self, info);
+		}
+		private UIElement NPCPortraitInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.NPCPortraitInfoElement.orig_ProvideUIElement orig, NPCPortraitInfoElement self, BestiaryUICollectionInfo info) {
+			UIElement element = orig(self, info);
+			if (info.UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0 && LootViewerConfig.KillCounter) {
+				if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
+					int kills = Main.BestiaryTracker.Kills.GetKillCount(ContentSamples.NpcBestiaryCreditIdsByNpcNetIds[infoElement.NetId]);
+					if (kills > 0) {
+						UIElement element2 = CreateKillsContainer(kills);
+						element.Append(element2);
+					}
+				}
+			}
+			return element;
+		}
+
+		private static UIElement CreateKillsContainer(int kills) {
+			float panelHeight = 16f;
+			float tombstoneScale = (panelHeight / 30);
+			UIElement backPanel = new UIPanel(null, null, 5, 21) {
+				Width = new StyleDimension(26, 0f),
+				Height = new StyleDimension(panelHeight, 0f),
+				BackgroundColor = Color.Transparent,
+				BorderColor = Color.Transparent,
+				Left = new StyleDimension(-16, 0f),
+				Top = new StyleDimension(6f, 0f),
+				VAlign = 0f,
+				HAlign = 1f
+			};
+			backPanel.SetPadding(0f);
+			backPanel.Append(new UIImage(Main.Assets.Request<Texture2D>("Images/Item_321")) {
+				Left = new StyleDimension(0, 0f),
+				Width = new StyleDimension(tombstoneScale * 26, 0f),
+				Height = new StyleDimension(0, 1f),
+				VAlign = 0.5f,
+				HAlign = 1f,
+				ScaleToFit = true
+			});
+			backPanel.Append(new UIText(kills.ToString()) {
+				Left = new StyleDimension(-26 * tombstoneScale - 4, 0f),
+				VAlign = 0.5f,
+				HAlign = 1f
+			});
+			return backPanel;
 		}
 	}
 	public class GlobalLootViewerNPC : ModNPC {
@@ -246,9 +293,12 @@ namespace GlobalLootViewer {
 		[Tooltip("Changes the background color of conditional drops based on whether or not they can currently drop")]
 		[DefaultValue(true)]
 		public bool highlightConditional = true;
+		[Label("Show kill count")]
+		[DefaultValue(true)]
+		public bool killCounter = true;
 		[Label("Hidden entries")]
 		[Tooltip("A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)\n"
-			+ "unfortunately due to how overly complicated changing a mod config is")]
+			+ "unfortunately due to how overly complicated changing a mod config is this can only be edited in the bestiary or the config file")]
 		public List<string> HiddenEntriesStrings {
 			get {
 				hiddenEntries ??= new();
@@ -284,6 +334,8 @@ namespace GlobalLootViewer {
 		public static bool HideInactive => Instance.hideInactive;
 		[JsonIgnore]
 		public static bool HighlightConditional => Instance.highlightConditional;
+		[JsonIgnore]
+		public static bool KillCounter => Instance.killCounter;
 		[JsonIgnore]
 		public static List<int> HiddenEntries => Instance.hiddenEntries ??= new();
 		internal void Save() {
