@@ -1,1 +1,3 @@
-Adds a bestiary entry that shows global loot drops and highlights conditional drops that could currently drop
+Adds a bestiary entry that shows global loot drops
+Highlights conditional drops that could currently drop
+Adds a kill counter to the bestiary
