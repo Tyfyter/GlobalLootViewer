@@ -8,9 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.GameContent.Bestiary;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.GameContent.UI.Elements;
+using Terraria.GameContent.UI.States;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -68,7 +70,31 @@ namespace GlobalLootViewer {
 				if (altLib.Code.GetType("HallowAltDropCondition") is Type hallowAlt) IgnoreWhenHighlighting.Add(hallowAlt);
 				if (altLib.Code.GetType("HallowDropCondition") is Type hallow) IgnoreWhenHighlighting.Add(hallow);
 			}
+			var filter = new GlobalLootFilter();
+			Main.BestiaryDB.Filters.Add(filter);
+			((EntryFilterer<BestiaryEntry, IBestiaryEntryFilter>)typeof(UIBestiaryTest).GetField("_filterer", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Main.BestiaryUI))
+				.AddFilters(new List<IBestiaryEntryFilter>() { filter });
+			On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.GetIsFilterAvailableForEntries += UIBestiaryFilteringOptionsGrid_GetIsFilterAvailableForEntries;
+			On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.ctor += UIBestiaryFilteringOptionsGrid_ctor;
 		}
+
+		private void UIBestiaryFilteringOptionsGrid_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.orig_ctor orig, UIBestiaryFilteringOptionsGrid self, Terraria.DataStructures.EntryFilterer<BestiaryEntry, IBestiaryEntryFilter> filterer) {
+			orig(self, filterer);
+		}
+
+		private bool UIBestiaryFilteringOptionsGrid_GetIsFilterAvailableForEntries(On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.orig_GetIsFilterAvailableForEntries orig, UIBestiaryFilteringOptionsGrid self, IBestiaryEntryFilter filter, List<BestiaryEntry> entries) {
+			bool? forcedDisplay = filter.ForcedDisplay;
+			if (forcedDisplay.HasValue) {
+				return forcedDisplay.Value;
+			}
+			for (int i = 0; i < entries.Count; i++) {
+				if (filter.FitsFilter(entries[i]) && entries[i].UIInfoProvider.GetEntryUICollectionInfo().UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public override void Unload() {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
 			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
@@ -235,38 +261,56 @@ namespace GlobalLootViewer {
 			});
 			return backPanel;
 		}
-	}
-	public class GlobalLootViewerNPC : ModNPC {
-		public override string Texture => "GlobalLootViewer/icon_small";
-		public static int ID { get; private set; }
-		public override void SetStaticDefaults() {
-			DisplayName.SetDefault("Global Loot Viewer");
-			ID = Type;
-		}
-		public override void SetDefaults() {
-			NPC.width = NPC.height = 30;
-			NPC.lifeMax = 250;
-			NPC.value = 250;
-		}
-		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
-			bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
+		public override void PostSetupContent() {
+			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
+				Hide = false,
+				CustomTexturePath = "Terraria/Images/UI/Camera_1"
+			};
+			NPCID.Sets.NPCBestiaryDrawOffset[HiddenLootViewerNPC.ID] = new() {
+				Hide = false,
+				CustomTexturePath = "Terraria/Images/UI/Camera_1"
+			};
 		}
 	}
-	public class HiddenLootViewerNPC : ModNPC {
-		public override string Texture => "GlobalLootViewer/icon_small";
-		public static int ID { get; private set; }
-		public override void SetStaticDefaults() {
-			DisplayName.SetDefault("Global Loot Viewer (Hidden Loot)");
-			ID = Type;
+	public class GlobalLootViewerGlobalNPC : GlobalNPC {
+		public override void SetBestiary(NPC npc, BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
+			if (npc.type == GlobalLootViewerNPC.ID) {
+				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer", "Images/UI/Bestiary", () => true);
+				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
+				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
+					bestiaryEntry.Info[1] = new NamePlateInfoElement("Global Loot", GlobalLootViewerNPC.ID);
+				}
+				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement or NPCStatsReportInfoElement or FlavorTextBestiaryInfoElement);
+				bestiaryEntry.AddTags(
+					Mod.ModSourceBestiaryInfoElement
+				);
+			}else if (npc.type == HiddenLootViewerNPC.ID) {
+				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer (Hidden Loot)", "Images/UI/Bestiary", () => true);
+				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
+				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
+					bestiaryEntry.Info[1] = new NamePlateInfoElement("Hidden Global Loot", HiddenLootViewerNPC.ID);
+				}
+				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement or NPCStatsReportInfoElement or FlavorTextBestiaryInfoElement);
+				bestiaryEntry.AddTags(
+					Mod.ModSourceBestiaryInfoElement
+				);
+			}
 		}
-		public override void SetDefaults() {
-			NPC.width = NPC.height = 30;
-			NPC.lifeMax = 250;
-			NPC.value = 250;
-		}
-		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
-			bestiaryEntry.UIInfoProvider = new HiddenEnemyUICollectionInfoProvider();
-		}
+	}
+	public class GlobalLootFilter : IBestiaryEntryFilter {
+		public bool? ForcedDisplay => true;
+		public bool FitsFilter(BestiaryEntry entry) => entry.UIInfoProvider is UnlockedEnemyUICollectionInfoProvider or HiddenEnemyUICollectionInfoProvider;
+		public string GetDisplayNameKey() => ModContent.GetInstance<GlobalLootViewer>().DisplayName;
+		public UIElement GetImage() => new UIImage(ModContent.GetInstance<GlobalLootViewer>().Assets.Request<Texture2D>("icon_small")) {
+			HAlign = 0.5f,
+			VAlign = 0.5f
+		};
+	}
+	public static class GlobalLootViewerNPC {
+		public static int ID => NPCID.PirateGhost;
+	}
+	public static class HiddenLootViewerNPC {
+		public static int ID => NPCID.SlimeSpiked;
 	}
 	public class UnlockedEnemyUICollectionInfoProvider : IBestiaryUICollectionInfoProvider {
 		public BestiaryUICollectionInfo GetEntryUICollectionInfo() {
