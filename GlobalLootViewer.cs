@@ -1,12 +1,14 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
+using ReLogic.Content;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent.Bestiary;
@@ -23,6 +25,8 @@ using OnConditions = On.Terraria.GameContent.ItemDropRules.Conditions;
 namespace GlobalLootViewer {
 	public class GlobalLootViewer : Mod {
 		public HashSet<Type> IgnoreWhenHighlighting { get; private set; }
+		public FastFieldInfo<CustomEntryIcon, Func<bool>> _unlockCondition;
+		public MethodInfo unlockCondition;
 		public GlobalLootViewer() {
 			IgnoreWhenHighlighting = new();
 		}
@@ -70,29 +74,21 @@ namespace GlobalLootViewer {
 				if (altLib.Code.GetType("HallowAltDropCondition") is Type hallowAlt) IgnoreWhenHighlighting.Add(hallowAlt);
 				if (altLib.Code.GetType("HallowDropCondition") is Type hallow) IgnoreWhenHighlighting.Add(hallow);
 			}
-			var filter = new GlobalLootFilter();
-			Main.BestiaryDB.Filters.Add(filter);
-			((EntryFilterer<BestiaryEntry, IBestiaryEntryFilter>)typeof(UIBestiaryTest).GetField("_filterer", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Main.BestiaryUI))
-				.AddFilters(new List<IBestiaryEntryFilter>() { filter });
-			On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.GetIsFilterAvailableForEntries += UIBestiaryFilteringOptionsGrid_GetIsFilterAvailableForEntries;
 			On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.ctor += UIBestiaryFilteringOptionsGrid_ctor;
+			On.Terraria.GameContent.Bestiary.CustomEntryIcon.UpdateUnlockState += CustomEntryIcon_UpdateUnlockState;
+			_unlockCondition = new("_unlockCondition", BindingFlags.NonPublic | BindingFlags.Instance, true);
+			unlockCondition = typeof(GlobalLootViewer).GetMethod("AlwaysUnlocked", BindingFlags.Public | BindingFlags.Static);
+		}
+
+		private void CustomEntryIcon_UpdateUnlockState(On.Terraria.GameContent.Bestiary.CustomEntryIcon.orig_UpdateUnlockState orig, CustomEntryIcon self, bool state) {
+			if (_unlockCondition.GetValue(self).Method != unlockCondition) {
+				orig(self, state);
+			}
 		}
 
 		private void UIBestiaryFilteringOptionsGrid_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.orig_ctor orig, UIBestiaryFilteringOptionsGrid self, Terraria.DataStructures.EntryFilterer<BestiaryEntry, IBestiaryEntryFilter> filterer) {
+			filterer.AddFilters(new List<IBestiaryEntryFilter>() { new GlobalLootFilter() });
 			orig(self, filterer);
-		}
-
-		private bool UIBestiaryFilteringOptionsGrid_GetIsFilterAvailableForEntries(On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.orig_GetIsFilterAvailableForEntries orig, UIBestiaryFilteringOptionsGrid self, IBestiaryEntryFilter filter, List<BestiaryEntry> entries) {
-			bool? forcedDisplay = filter.ForcedDisplay;
-			if (forcedDisplay.HasValue) {
-				return forcedDisplay.Value;
-			}
-			for (int i = 0; i < entries.Count; i++) {
-				if (filter.FitsFilter(entries[i]) && entries[i].UIInfoProvider.GetEntryUICollectionInfo().UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0) {
-					return true;
-				}
-			}
-			return false;
 		}
 
 		public override void Unload() {
@@ -271,11 +267,13 @@ namespace GlobalLootViewer {
 				CustomTexturePath = "Terraria/Images/UI/Camera_1"
 			};
 		}
+		public static bool AlwaysUnlocked() => true;
 	}
 	public class GlobalLootViewerGlobalNPC : GlobalNPC {
 		public override void SetBestiary(NPC npc, BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
 			if (npc.type == GlobalLootViewerNPC.ID) {
-				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer", "Images/UI/Bestiary", () => true);
+				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer", "Images/UI/Bestiary", GlobalLootViewer.AlwaysUnlocked);
+				typeof(CustomEntryIcon).GetField("_sourceRectangle", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(bestiaryEntry.Icon, new Rectangle(32, 2, 30, 26));
 				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
 				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
 					bestiaryEntry.Info[1] = new NamePlateInfoElement("Global Loot", GlobalLootViewerNPC.ID);
@@ -285,7 +283,8 @@ namespace GlobalLootViewer {
 					Mod.ModSourceBestiaryInfoElement
 				);
 			}else if (npc.type == HiddenLootViewerNPC.ID) {
-				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer (Hidden Loot)", "Images/UI/Bestiary", () => true);
+				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer (Hidden Loot)", "Images/UI/Camera_1", GlobalLootViewer.AlwaysUnlocked);
+				typeof(CustomEntryIcon).GetField("_sourceRectangle", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(bestiaryEntry.Icon, new Rectangle(0, 0, 32, 32));
 				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
 				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
 					bestiaryEntry.Info[1] = new NamePlateInfoElement("Hidden Global Loot", HiddenLootViewerNPC.ID);
@@ -298,12 +297,19 @@ namespace GlobalLootViewer {
 		}
 	}
 	public class GlobalLootFilter : IBestiaryEntryFilter {
+		readonly string text;
+		readonly Asset<Texture2D> asset;
+		public GlobalLootFilter() {
+			text = ModContent.GetInstance<GlobalLootViewer>().DisplayName;
+			asset = ModContent.GetInstance<GlobalLootViewer>().Assets.Request<Texture2D>("icon_small");
+		}
 		public bool? ForcedDisplay => true;
 		public bool FitsFilter(BestiaryEntry entry) => entry.UIInfoProvider is UnlockedEnemyUICollectionInfoProvider or HiddenEnemyUICollectionInfoProvider;
-		public string GetDisplayNameKey() => ModContent.GetInstance<GlobalLootViewer>().DisplayName;
-		public UIElement GetImage() => new UIImage(ModContent.GetInstance<GlobalLootViewer>().Assets.Request<Texture2D>("icon_small")) {
+		public string GetDisplayNameKey() => text;
+		public UIElement GetImage() => new UIImage(asset) {
 			HAlign = 0.5f,
-			VAlign = 0.5f
+			VAlign = 0.5f,
+			ScaleToFit = true
 		};
 	}
 	public static class GlobalLootViewerNPC {
@@ -388,6 +394,56 @@ namespace GlobalLootViewer {
 			string path = Path.Combine(ConfigManager.ModConfigPath, filename);
 			string json = JsonConvert.SerializeObject(this, ConfigManager.serializerSettings);
 			File.WriteAllText(path, json);
+		}
+	}
+	public class FastFieldInfo<TParent, T> {
+		public readonly FieldInfo field;
+		Func<TParent, T> getter;
+		Action<TParent, T> setter;
+		public FastFieldInfo(string name, BindingFlags bindingFlags, bool init = false) {
+			field = typeof(TParent).GetField(name, bindingFlags);
+			if (init) {
+				getter = CreateGetter();
+				setter = CreateSetter();
+			}
+		}
+		public FastFieldInfo(FieldInfo field, bool init = false) {
+			this.field = field;
+			if (init) {
+				getter = CreateGetter();
+				setter = CreateSetter();
+			}
+		}
+		public T GetValue(TParent parent) {
+			return (getter ??= CreateGetter())(parent);
+		}
+		public void SetValue(TParent parent, T value) {
+			(setter ??= CreateSetter())(parent, value);
+		}
+		private Func<TParent, T> CreateGetter() {
+			if (field.FieldType != typeof(T)) throw new InvalidOperationException($"type of {field.Name} does not match provided type {typeof(T)}");
+			string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
+			DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(T), new Type[] { typeof(TParent) }, true);
+			ILGenerator gen = getterMethod.GetILGenerator();
+
+			gen.Emit(OpCodes.Ldarg_0);
+			gen.Emit(OpCodes.Ldfld, field);
+			gen.Emit(OpCodes.Ret);
+
+			return (Func<TParent, T>)getterMethod.CreateDelegate(typeof(Func<TParent, T>));
+		}
+		private Action<TParent, T> CreateSetter() {
+			if (field.FieldType != typeof(T)) throw new InvalidOperationException($"type of {field.Name} does not match provided type {typeof(T)}");
+			string methodName = field.ReflectedType.FullName + ".set_" + field.Name;
+			DynamicMethod setterMethod = new DynamicMethod(methodName, null, new Type[] { typeof(TParent), typeof(T) }, true);
+			ILGenerator gen = setterMethod.GetILGenerator();
+
+			gen.Emit(OpCodes.Ldarg_0);
+			gen.Emit(OpCodes.Ldarg_1);
+			gen.Emit(OpCodes.Stfld, field);
+			gen.Emit(OpCodes.Ret);
+
+			return (Action<TParent, T>)setterMethod.CreateDelegate(typeof(Action<TParent, T>));
 		}
 	}
 }
