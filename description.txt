@@ -4,4 +4,4 @@ Adds a kill counter to the bestiary
 
 Changelog:
 1.2.2:
-no longer relies on adding NPCs and instead replaces the nonexistent entries for big and small pincushion zombies
+no longer relies on adding NPCs and instead replaces the nonexistent entries for Pirate's Curse and Spiked Blue Slimes (so unfortunately it won't work with mods that add entries for these, I tried to use size variants of pincushion zombies but I couldn't get the entries to show up)

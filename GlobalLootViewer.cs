@@ -79,30 +79,27 @@ namespace GlobalLootViewer {
 			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.TryGivingEntryFlavorTextIfItIsMissing += BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing;
 			_unlockCondition = new("_unlockCondition", BindingFlags.NonPublic | BindingFlags.Instance, true);
 			unlockCondition = typeof(GlobalLootViewer).GetMethod("AlwaysUnlocked", BindingFlags.Public | BindingFlags.Static);
-			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.GetExclusions += BestiaryDatabaseNPCsPopulator_GetExclusions;
-			On.Terraria.ID.ContentSamples.BestiaryHelper.GetSortedBestiaryEntriesList += BestiaryHelper_GetSortedBestiaryEntriesList; NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
+			/*
+			On.Terraria.ID.ContentSamples.BestiaryHelper.GetSortedBestiaryEntriesList += BestiaryHelper_GetSortedBestiaryEntriesList;
+			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
 				Hide = false,
-				CustomTexturePath = "Terraria/Images/UI/Camera_1"
+				CustomTexturePath = "Terraria/Images/UI/Bestiary"
 			};
 			NPCID.Sets.NPCBestiaryDrawOffset[HiddenLootViewerNPC.ID] = new() {
 				Hide = false,
 				CustomTexturePath = "Terraria/Images/UI/Camera_1"
 			};
+			//*/
 			On.Terraria.ID.ContentSamples.BestiaryHelper.ShouldHideBestiaryEntry += BestiaryHelper_ShouldHideBestiaryEntry;
+			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.GetExclusions += BestiaryDatabaseNPCsPopulator_GetExclusions;
 			On.Terraria.ID.NPCID.Sets.GetLeinforsEntries += Sets_GetLeinforsEntries;
-			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.AddEmptyEntries_CrittersAndEnemies_Automated += BestiaryDatabaseNPCsPopulator_AddEmptyEntries_CrittersAndEnemies_Automated;
-		}
-
-		private void BestiaryDatabaseNPCsPopulator_AddEmptyEntries_CrittersAndEnemies_Automated(On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.orig_AddEmptyEntries_CrittersAndEnemies_Automated orig, BestiaryDatabaseNPCsPopulator self) {
-			orig(self);
-			self.
 		}
 
 		private Dictionary<int, NPCID.Sets.NPCBestiaryDrawModifiers> Sets_GetLeinforsEntries(On.Terraria.ID.NPCID.Sets.orig_GetLeinforsEntries orig) {
 			var value = orig();
 			value[GlobalLootViewerNPC.ID] = new() {
 				Hide = false,
-				CustomTexturePath = "Terraria/Images/UI/Camera_1"
+				CustomTexturePath = "Terraria/Images/UI/Bestiary"
 			};
 			value[HiddenLootViewerNPC.ID] = new() {
 				Hide = false,
@@ -110,17 +107,14 @@ namespace GlobalLootViewer {
 			};
 			return value;
 		}
-		//obsolete
 		private bool BestiaryHelper_ShouldHideBestiaryEntry(On.Terraria.ID.ContentSamples.BestiaryHelper.orig_ShouldHideBestiaryEntry orig, NPC npc) {
-			bool test = orig(npc);
 			if (npc.netID == GlobalLootViewerNPC.ID || npc.netID == HiddenLootViewerNPC.ID) return false;
 			return orig(npc);
 		}
-		//obsolete
 		private List<KeyValuePair<int, NPC>> BestiaryHelper_GetSortedBestiaryEntriesList(On.Terraria.ID.ContentSamples.BestiaryHelper.orig_GetSortedBestiaryEntriesList orig, BestiaryDatabase database) {
 			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
 				Hide = false,
-				CustomTexturePath = "Terraria/Images/UI/Camera_1"
+				CustomTexturePath = "Terraria/Images/UI/Bestiary"
 			};
 			NPCID.Sets.NPCBestiaryDrawOffset[HiddenLootViewerNPC.ID] = new() {
 				Hide = false,
@@ -128,7 +122,6 @@ namespace GlobalLootViewer {
 			};
 			return orig(database);
 		}
-		//obsolete
 		private HashSet<int> BestiaryDatabaseNPCsPopulator_GetExclusions(On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.orig_GetExclusions orig) {
 			HashSet<int> output = orig();
 			output.Remove(GlobalLootViewerNPC.ID);
@@ -364,10 +357,10 @@ namespace GlobalLootViewer {
 		};
 	}
 	public static class GlobalLootViewerNPC {
-		public static int ID => NPCID.BigPincushionZombie;
+		public static int ID => NPCID.PirateGhost;
 	}
 	public static class HiddenLootViewerNPC {
-		public static int ID => NPCID.SmallPincushionZombie;
+		public static int ID => NPCID.SlimeSpiked;
 	}
 	public class UnlockedEnemyUICollectionInfoProvider : IBestiaryUICollectionInfoProvider {
 		public BestiaryUICollectionInfo GetEntryUICollectionInfo() {
