@@ -1,12 +1,47 @@
-Mods.GlobalLootViewer.NPCs.GlobalLootViewerNPC.DisplayName: Global Loot
+Mods: {
+	GlobalLootViewer: {
+		NPCs.GlobalLootViewerNPC.DisplayName: Global Loot
+
+		Configs: {
+			LootViewerConfig: {
+				DisplayName: Settings
+
+				hideInactive: {
+					Label: Hide inactive drops
+					Tooltip: ""
+				}
+
+				highlightConditional: {
+					Label: Highlight conditional drops
+					Tooltip: Changes the background color of conditional drops based on whether or not they can currently drop
+				}
+
+				killCounter: {
+					Label: Show kill count
+					Tooltip: ""
+				}
+
+				HiddenEntriesStrings: {
+					Label: Hidden entries
+					Tooltip:
+						'''
+						A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)
+						unfortunately due to how overly complicated changing a mod config is this can only be edited in the bestiary or the config file
+						'''
+				}
+			}
+		}
+	}
+}
+
 Bestiary_ItemDropConditions: {
-	"Hardmode": "Drops in Hardmode"
-	"YoyoCascade": "Drops near the underworld after defeating Skeletron but before Hardmode"
-	"YoyosAmarok": "Drops in the Hardmode Snow"
-	"YoyosYelets": "Drops in the Jungle after defeating any Mech Boss"
-	"YoyosKraken": "Drops in the Dungeon after defeating Plantera"
-	"YoyosHelFire": "Drops near the underworld in Hardmode"
-	"HalloweenWeapons": "Drops in early gameplay during Halloween"
-	"HalloweenGoodieBagDrop": "Drops during Halloween season"
-	"XmasPresentDrop": "{$Bestiary_ItemDropConditions.IsChristmas}"
+	Hardmode: Drops in Hardmode
+	YoyoCascade: Drops near the underworld after defeating Skeletron but before Hardmode
+	YoyosAmarok: Drops in the Hardmode Snow
+	YoyosYelets: Drops in the Jungle after defeating any Mech Boss
+	YoyosKraken: Drops in the Dungeon after defeating Plantera
+	YoyosHelFire: Drops near the underworld in Hardmode
+	HalloweenWeapons: Drops in early gameplay during Halloween
+	HalloweenGoodieBagDrop: Drops during Halloween season
+	XmasPresentDrop: "{$Bestiary_ItemDropConditions.IsChristmas}"
 }

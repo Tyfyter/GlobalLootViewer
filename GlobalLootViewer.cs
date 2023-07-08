@@ -20,7 +20,6 @@ using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Config;
 using Terraria.UI;
-using OnConditions = On.Terraria.GameContent.ItemDropRules.Conditions;
 
 namespace GlobalLootViewer {
 	public class GlobalLootViewer : Mod {
@@ -31,36 +30,35 @@ namespace GlobalLootViewer {
 			IgnoreWhenHighlighting = new();
 		}
 		public override void Load() {
-			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
-			On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
-			On.Terraria.GameContent.Bestiary.NPCPortraitInfoElement.ProvideUIElement += NPCPortraitInfoElement_ProvideUIElement;
-			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription += MechanicalBossesDummyCondition_GetConditionDescription;
-			OnConditions.MechanicalBossesDummyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.SoulOfNight.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.SoulOfLight.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
+			On_ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
+			On_NPCPortraitInfoElement.ProvideUIElement += NPCPortraitInfoElement_ProvideUIElement;
+			On_Conditions.MechanicalBossesDummyCondition.GetConditionDescription += MechanicalBossesDummyCondition_GetConditionDescription;
+			On_Conditions.MechanicalBossesDummyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.SoulOfNight.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.SoulOfLight.CanShowItemDropInUI += (_, _) => Main.hardMode;
 
-			OnConditions.KOCannon.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.LivingFlames.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.PirateMap.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.LivingFlames.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.PirateMap.CanShowItemDropInUI += (_, _) => Main.hardMode;
 
-			OnConditions.CorruptKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.CrimsonKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.DesertKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.FrozenKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.HallowKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.JungleKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.CorruptKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.CrimsonKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.DesertKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.FrozenKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.HallowKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.JungleKeyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
 
-			OnConditions.YoyoCascade.CanShowItemDropInUI += (_, _) => NPC.downedBoss3 && !(LootViewerConfig.HideInactive && Main.hardMode);
-			OnConditions.YoyosAmarok.CanShowItemDropInUI += (_, _) => Main.hardMode;
-			OnConditions.YoyosYelets.CanShowItemDropInUI += (_, _) => NPC.downedMechBossAny;
-			OnConditions.YoyosKraken.CanShowItemDropInUI += (_, _) => NPC.downedPlantBoss;
-			OnConditions.YoyosHelFire.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.YoyoCascade.CanShowItemDropInUI += (_, _) => NPC.downedBoss3 && !(LootViewerConfig.HideInactive && Main.hardMode);
+			On_Conditions.YoyosAmarok.CanShowItemDropInUI += (_, _) => Main.hardMode;
+			On_Conditions.YoyosYelets.CanShowItemDropInUI += (_, _) => NPC.downedMechBossAny;
+			On_Conditions.YoyosKraken.CanShowItemDropInUI += (_, _) => NPC.downedPlantBoss;
+			On_Conditions.YoyosHelFire.CanShowItemDropInUI += (_, _) => Main.hardMode;
 
-			OnConditions.HalloweenGoodieBagDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.halloween;
-			OnConditions.HalloweenWeapons.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.halloween;
-			OnConditions.IsChristmas.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
-			OnConditions.XmasPresentDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
-			On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.ctor += UIBestiaryInfoItemLine_ctor;
+			On_Conditions.HalloweenGoodieBagDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.halloween;
+			On_Conditions.HalloweenWeapons.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.halloween;
+			On_Conditions.IsChristmas.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
+			On_Conditions.XmasPresentDrop.CanShowItemDropInUI += (_, _) => !LootViewerConfig.HideInactive || Main.xMas;
+			On_UIBestiaryInfoItemLine.ctor += UIBestiaryInfoItemLine_ctor;
 			IgnoreWhenHighlighting.Add(typeof(Conditions.MissingTwin));
 			IgnoreWhenHighlighting.Add(typeof(Conditions.EmpressOfLightIsGenuinelyEnraged));
 			IgnoreWhenHighlighting.Add(typeof(Conditions.NamedNPC));
@@ -74,9 +72,9 @@ namespace GlobalLootViewer {
 				if (altLib.Code.GetType("HallowAltDropCondition") is Type hallowAlt) IgnoreWhenHighlighting.Add(hallowAlt);
 				if (altLib.Code.GetType("HallowDropCondition") is Type hallow) IgnoreWhenHighlighting.Add(hallow);
 			}
-			On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.ctor += UIBestiaryFilteringOptionsGrid_ctor;
-			On.Terraria.GameContent.Bestiary.CustomEntryIcon.UpdateUnlockState += CustomEntryIcon_UpdateUnlockState;
-			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.TryGivingEntryFlavorTextIfItIsMissing += BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing;
+			On_UIBestiaryFilteringOptionsGrid.ctor += UIBestiaryFilteringOptionsGrid_ctor;
+			On_CustomEntryIcon.UpdateUnlockState += CustomEntryIcon_UpdateUnlockState;
+			On_BestiaryDatabaseNPCsPopulator.TryGivingEntryFlavorTextIfItIsMissing += BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing;
 			_unlockCondition = new("_unlockCondition", BindingFlags.NonPublic | BindingFlags.Instance, true);
 			unlockCondition = typeof(GlobalLootViewer).GetMethod("AlwaysUnlocked", BindingFlags.Public | BindingFlags.Static);
 			/*
@@ -90,12 +88,12 @@ namespace GlobalLootViewer {
 				CustomTexturePath = "Terraria/Images/UI/Camera_1"
 			};
 			//*/
-			On.Terraria.ID.ContentSamples.BestiaryHelper.ShouldHideBestiaryEntry += BestiaryHelper_ShouldHideBestiaryEntry;
-			On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.GetExclusions += BestiaryDatabaseNPCsPopulator_GetExclusions;
-			On.Terraria.ID.NPCID.Sets.GetLeinforsEntries += Sets_GetLeinforsEntries;
+			On_ContentSamples.BestiaryHelper.ShouldHideBestiaryEntry += BestiaryHelper_ShouldHideBestiaryEntry;
+			On_BestiaryDatabaseNPCsPopulator.GetExclusions += BestiaryDatabaseNPCsPopulator_GetExclusions;
+			On_NPCID.Sets.GetLeinforsEntries += Sets_GetLeinforsEntries;
 		}
 
-		private Dictionary<int, NPCID.Sets.NPCBestiaryDrawModifiers> Sets_GetLeinforsEntries(On.Terraria.ID.NPCID.Sets.orig_GetLeinforsEntries orig) {
+		private Dictionary<int, NPCID.Sets.NPCBestiaryDrawModifiers> Sets_GetLeinforsEntries(On_NPCID.Sets.orig_GetLeinforsEntries orig) {
 			var value = orig();
 			value[GlobalLootViewerNPC.ID] = new() {
 				Hide = false,
@@ -107,11 +105,12 @@ namespace GlobalLootViewer {
 			};
 			return value;
 		}
-		private bool BestiaryHelper_ShouldHideBestiaryEntry(On.Terraria.ID.ContentSamples.BestiaryHelper.orig_ShouldHideBestiaryEntry orig, NPC npc) {
+		private bool BestiaryHelper_ShouldHideBestiaryEntry(On_ContentSamples.BestiaryHelper.orig_ShouldHideBestiaryEntry orig, NPC npc) {
 			if (npc.netID == GlobalLootViewerNPC.ID || npc.netID == HiddenLootViewerNPC.ID) return false;
 			return orig(npc);
 		}
-		private List<KeyValuePair<int, NPC>> BestiaryHelper_GetSortedBestiaryEntriesList(On.Terraria.ID.ContentSamples.BestiaryHelper.orig_GetSortedBestiaryEntriesList orig, BestiaryDatabase database) {
+		/*
+		private List<KeyValuePair<int, NPC>> BestiaryHelper_GetSortedBestiaryEntriesList(Terraria.ID.On_ContentSamples.BestiaryHelper.orig_GetSortedBestiaryEntriesList orig, BestiaryDatabase database) {
 			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
 				Hide = false,
 				CustomTexturePath = "Terraria/Images/UI/Bestiary"
@@ -121,35 +120,35 @@ namespace GlobalLootViewer {
 				CustomTexturePath = "Terraria/Images/UI/Camera_1"
 			};
 			return orig(database);
-		}
-		private HashSet<int> BestiaryDatabaseNPCsPopulator_GetExclusions(On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.orig_GetExclusions orig) {
+		}*/
+		private HashSet<int> BestiaryDatabaseNPCsPopulator_GetExclusions(On_BestiaryDatabaseNPCsPopulator.orig_GetExclusions orig) {
 			HashSet<int> output = orig();
 			output.Remove(GlobalLootViewerNPC.ID);
 			output.Remove(HiddenLootViewerNPC.ID);
 			return output;
 		}
 
-		private void BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing(On.Terraria.GameContent.Bestiary.BestiaryDatabaseNPCsPopulator.orig_TryGivingEntryFlavorTextIfItIsMissing orig, BestiaryDatabaseNPCsPopulator self, BestiaryEntry entry) {
+		private void BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing(On_BestiaryDatabaseNPCsPopulator.orig_TryGivingEntryFlavorTextIfItIsMissing orig, BestiaryDatabaseNPCsPopulator self, BestiaryEntry entry) {
 			if (entry.UIInfoProvider is UnlockedEnemyUICollectionInfoProvider or HiddenEnemyUICollectionInfoProvider) return;
 			orig(self, entry);
 		}
 
-		private void CustomEntryIcon_UpdateUnlockState(On.Terraria.GameContent.Bestiary.CustomEntryIcon.orig_UpdateUnlockState orig, CustomEntryIcon self, bool state) {
+		private void CustomEntryIcon_UpdateUnlockState(On_CustomEntryIcon.orig_UpdateUnlockState orig, CustomEntryIcon self, bool state) {
 			if (_unlockCondition.GetValue(self).Method != unlockCondition) {
 				orig(self, state);
 			}
 		}
 
-		private void UIBestiaryFilteringOptionsGrid_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryFilteringOptionsGrid.orig_ctor orig, UIBestiaryFilteringOptionsGrid self, Terraria.DataStructures.EntryFilterer<BestiaryEntry, IBestiaryEntryFilter> filterer) {
+		private void UIBestiaryFilteringOptionsGrid_ctor(On_UIBestiaryFilteringOptionsGrid.orig_ctor orig, UIBestiaryFilteringOptionsGrid self, EntryFilterer<BestiaryEntry, IBestiaryEntryFilter> filterer) {
 			filterer.AddFilters(new List<IBestiaryEntryFilter>() { new GlobalLootFilter() });
 			orig(self, filterer);
 		}
 
 		public override void Unload() {
-			On.Terraria.GameContent.Bestiary.BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
-			OnConditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
+			Terraria.GameContent.Bestiary.On_BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
+			On_Conditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
 		}
-		private static void BestiaryDatabase_ExtractDropsForNPC(On.Terraria.GameContent.Bestiary.BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
+		private static void BestiaryDatabase_ExtractDropsForNPC(On_BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
 			if (npcId != GlobalLootViewerNPC.ID && npcId != HiddenLootViewerNPC.ID) {
 				orig(self, dropsDatabase, npcId);
 			} else {
@@ -166,10 +165,10 @@ namespace GlobalLootViewer {
 				bestiaryEntry.Info.AddRange(ruleList.Select(info => new ItemDropBestiaryInfoElement(info)));
 			}
 		}
-		private static string MechanicalBossesDummyCondition_GetConditionDescription(OnConditions.MechanicalBossesDummyCondition.orig_GetConditionDescription orig, Conditions.MechanicalBossesDummyCondition self) {
+		private static string MechanicalBossesDummyCondition_GetConditionDescription(On_Conditions.MechanicalBossesDummyCondition.orig_GetConditionDescription orig, Conditions.MechanicalBossesDummyCondition self) {
 			return Language.GetTextValue("Bestiary_ItemDropConditions.Hardmode");
 		}
-		private void UIBestiaryInfoItemLine_ctor(On.Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine.orig_ctor orig, Terraria.GameContent.UI.Elements.UIBestiaryInfoItemLine self, DropRateInfo info, BestiaryUICollectionInfo uiinfo, float textScale) {
+		private void UIBestiaryInfoItemLine_ctor(On_UIBestiaryInfoItemLine.orig_ctor orig, UIBestiaryInfoItemLine self, DropRateInfo info, BestiaryUICollectionInfo uiinfo, float textScale) {
 			orig(self, info, uiinfo, textScale);
 			if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement0) {
 				if (infoElement0.NetId == GlobalLootViewerNPC.ID || infoElement0.NetId == HiddenLootViewerNPC.ID) {
@@ -181,7 +180,7 @@ namespace GlobalLootViewer {
 						}
 						LootViewerConfig.Instance.Save();
 						if (el.Parent is not null) {
-							Terraria.UI.UIElement parent = el.Parent;
+							UIElement parent = el.Parent;
 							float diff = el.Height.Pixels + 4 + el.MarginBottom;
 							int selfIndex = 0;
 							int index = 0;
@@ -254,7 +253,7 @@ namespace GlobalLootViewer {
 			_droprateInfo ??= typeof(ItemDropBestiaryInfoElement).GetField("_droprateInfo", BindingFlags.NonPublic | BindingFlags.Instance);
 			return (DropRateInfo)_droprateInfo.GetValue(self);
 		}
-		private static UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
+		private static UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On_ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
 			if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 				if (infoElement.NetId == GlobalLootViewerNPC.ID) {
 					if (LootViewerConfig.HiddenEntries.Contains(GetDropRateInfo(self).itemId)) {
@@ -268,7 +267,7 @@ namespace GlobalLootViewer {
 			}
 			return orig(self, info);
 		}
-		private UIElement NPCPortraitInfoElement_ProvideUIElement(On.Terraria.GameContent.Bestiary.NPCPortraitInfoElement.orig_ProvideUIElement orig, NPCPortraitInfoElement self, BestiaryUICollectionInfo info) {
+		private UIElement NPCPortraitInfoElement_ProvideUIElement(On_NPCPortraitInfoElement.orig_ProvideUIElement orig, NPCPortraitInfoElement self, BestiaryUICollectionInfo info) {
 			UIElement element = orig(self, info);
 			if (info.UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0 && LootViewerConfig.KillCounter) {
 				if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
