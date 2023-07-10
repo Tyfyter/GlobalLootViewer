@@ -32,6 +32,7 @@ namespace GlobalLootViewer {
 		public override void Load() {
 			On_BestiaryDatabase.ExtractDropsForNPC += BestiaryDatabase_ExtractDropsForNPC;
 			On_ItemDropBestiaryInfoElement.ProvideUIElement += ItemDropBestiaryInfoElement_ProvideUIElement;
+			On_NPCKillCounterInfoElement.ProvideUIElement += (orig, self, info) => LootViewerConfig.AltKillCounter ? null : orig(self, info);
 			On_NPCPortraitInfoElement.ProvideUIElement += NPCPortraitInfoElement_ProvideUIElement;
 			On_Conditions.MechanicalBossesDummyCondition.GetConditionDescription += MechanicalBossesDummyCondition_GetConditionDescription;
 			On_Conditions.MechanicalBossesDummyCondition.CanShowItemDropInUI += (_, _) => Main.hardMode;
@@ -145,7 +146,7 @@ namespace GlobalLootViewer {
 		}
 
 		public override void Unload() {
-			Terraria.GameContent.Bestiary.On_BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
+			On_BestiaryDatabase.ExtractDropsForNPC -= BestiaryDatabase_ExtractDropsForNPC;
 			On_Conditions.MechanicalBossesDummyCondition.GetConditionDescription -= MechanicalBossesDummyCondition_GetConditionDescription;
 		}
 		private static void BestiaryDatabase_ExtractDropsForNPC(On_BestiaryDatabase.orig_ExtractDropsForNPC orig, BestiaryDatabase self, ItemDropDatabase dropsDatabase, int npcId) {
@@ -269,7 +270,7 @@ namespace GlobalLootViewer {
 		}
 		private UIElement NPCPortraitInfoElement_ProvideUIElement(On_NPCPortraitInfoElement.orig_ProvideUIElement orig, NPCPortraitInfoElement self, BestiaryUICollectionInfo info) {
 			UIElement element = orig(self, info);
-			if (info.UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0 && LootViewerConfig.KillCounter) {
+			if (info.UnlockState > BestiaryEntryUnlockState.NotKnownAtAll_0 && LootViewerConfig.AltKillCounter) {
 				if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 					int kills = Main.BestiaryTracker.Kills.GetKillCount(ContentSamples.NpcBestiaryCreditIdsByNpcNetIds[infoElement.NetId]);
 					if (kills > 0) {
@@ -315,24 +316,34 @@ namespace GlobalLootViewer {
 	public class GlobalLootViewerGlobalNPC : GlobalNPC {
 		public override void SetBestiary(NPC npc, BestiaryDatabase database, BestiaryEntry bestiaryEntry) {
 			if (npc.type == GlobalLootViewerNPC.ID) {
-				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer", "Images/UI/Bestiary", GlobalLootViewer.AlwaysUnlocked);
+				bestiaryEntry.Icon = new CustomEntryIcon("Mods.GlobalLootViewer.GlobalLootViewer", "Images/UI/Bestiary", GlobalLootViewer.AlwaysUnlocked);
 				typeof(CustomEntryIcon).GetField("_sourceRectangle", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(bestiaryEntry.Icon, new Rectangle(32, 2, 30, 26));
 				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
 				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
-					bestiaryEntry.Info[1] = new NamePlateInfoElement("Global Loot", GlobalLootViewerNPC.ID);
+					bestiaryEntry.Info[1] = new NamePlateInfoElement("Mods.GlobalLootViewer.GlobalLoot", GlobalLootViewerNPC.ID);
 				}
-				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement or NPCStatsReportInfoElement or FlavorTextBestiaryInfoElement);
+				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement
+					or NPCStatsReportInfoElement
+					or FlavorTextBestiaryInfoElement
+					or NPCKillCounterInfoElement
+					or SpawnConditionBestiaryInfoElement
+				);
 				bestiaryEntry.AddTags(
 					Mod.ModSourceBestiaryInfoElement
 				);
 			}else if (npc.type == HiddenLootViewerNPC.ID) {
-				bestiaryEntry.Icon = new CustomEntryIcon("Global Loot Viewer (Hidden Loot)", "Images/UI/Camera_1", GlobalLootViewer.AlwaysUnlocked);
+				bestiaryEntry.Icon = new CustomEntryIcon("Mods.GlobalLootViewer.HiddenGlobalLootViewer", "Images/UI/Camera_1", GlobalLootViewer.AlwaysUnlocked);
 				typeof(CustomEntryIcon).GetField("_sourceRectangle", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(bestiaryEntry.Icon, new Rectangle(0, 0, 32, 32));
 				bestiaryEntry.UIInfoProvider = new UnlockedEnemyUICollectionInfoProvider();
 				if (bestiaryEntry.Info[1] is NamePlateInfoElement) {
-					bestiaryEntry.Info[1] = new NamePlateInfoElement("Hidden Global Loot", HiddenLootViewerNPC.ID);
+					bestiaryEntry.Info[1] = new NamePlateInfoElement("Mods.GlobalLootViewer.HiddenGlobalLoot", HiddenLootViewerNPC.ID);
 				}
-				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement or NPCStatsReportInfoElement or FlavorTextBestiaryInfoElement);
+				bestiaryEntry.Info.RemoveAll(i => i is NPCPortraitInfoElement
+					or NPCStatsReportInfoElement
+					or FlavorTextBestiaryInfoElement
+					or NPCKillCounterInfoElement
+					or SpawnConditionBestiaryInfoElement
+				); 
 				bestiaryEntry.AddTags(
 					Mod.ModSourceBestiaryInfoElement
 				);
@@ -375,23 +386,15 @@ namespace GlobalLootViewer {
 			return result;
 		}
 	}
-	[Label("Settings")]
 	public class LootViewerConfig : ModConfig {
 		public static LootViewerConfig Instance;
 		public override ConfigScope Mode => ConfigScope.ClientSide;
-		[Label("Hide inactive drops")]
 		[DefaultValue(true)]
 		public bool hideInactive = true;
-		[Label("Highlight conditional drops")]
-		[Tooltip("Changes the background color of conditional drops based on whether or not they can currently drop")]
 		[DefaultValue(true)]
 		public bool highlightConditional = true;
-		[Label("Show kill count")]
 		[DefaultValue(true)]
-		public bool killCounter = true;
-		[Label("Hidden entries")]
-		[Tooltip("A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)\n"
-			+ "unfortunately due to how overly complicated changing a mod config is this can only be edited in the bestiary or the config file")]
+		public bool altKillCounter = true;
 		public List<string> HiddenEntriesStrings {
 			get {
 				hiddenEntries ??= new();
@@ -428,7 +431,7 @@ namespace GlobalLootViewer {
 		[JsonIgnore]
 		public static bool HighlightConditional => Instance.highlightConditional;
 		[JsonIgnore]
-		public static bool KillCounter => Instance.killCounter;
+		public static bool AltKillCounter => Instance.altKillCounter;
 		[JsonIgnore]
 		public static List<int> HiddenEntries => Instance.hiddenEntries ??= new();
 		internal void Save() {

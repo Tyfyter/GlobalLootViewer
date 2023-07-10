@@ -1,6 +1,9 @@
 Mods: {
 	GlobalLootViewer: {
-		NPCs.GlobalLootViewerNPC.DisplayName: Global Loot
+		GlobalLoot: Global Loot
+		HiddenGlobalLoot: Hidden Global Loot
+		GlobalLootViewer: Global Loot Viewer
+		HiddenGlobalLootViewer: Global Loot Viewer (Hidden Loot)
 
 		Configs: {
 			LootViewerConfig: {
@@ -16,8 +19,8 @@ Mods: {
 					Tooltip: Changes the background color of conditional drops based on whether or not they can currently drop
 				}
 
-				killCounter: {
-					Label: Show kill count
+				altKillCounter: {
+					Label: Alternate kill counter placement
 					Tooltip: ""
 				}
 
@@ -28,6 +31,11 @@ Mods: {
 						A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)
 						unfortunately due to how overly complicated changing a mod config is this can only be edited in the bestiary or the config file
 						'''
+				}
+
+				altKillCounter: {
+					Label: alt Kill Counter
+					Tooltip: ""
 				}
 			}
 		}
