@@ -212,9 +212,10 @@ namespace GlobalLootViewer {
 			if (!LootViewerConfig.HighlightConditional) return;
 			if ((info.conditions?.Count ?? 0) > 0) {
 				NPC npc = new();
-				if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
+				npc.SetDefaults(NPCID.SkeletonArcher);
+				/*if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
 					npc.SetDefaults(infoElement.NetId);
-				}
+				}*/
 				npc.position = Main.LocalPlayer.position;
 				npc.target = Main.myPlayer;
 				DropAttemptInfo dropInfo = default(DropAttemptInfo);

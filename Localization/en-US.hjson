@@ -20,7 +20,7 @@ Mods: {
 				}
 
 				altKillCounter: {
-					Label: Alternate kill counter placement
+					Label: alt Kill Counter
 					Tooltip: ""
 				}
 
@@ -31,11 +31,6 @@ Mods: {
 						A list of item types which have been hidden from the global loot viewer (right click to hide/unhide)
 						unfortunately due to how overly complicated changing a mod config is this can only be edited in the bestiary or the config file
 						'''
-				}
-
-				altKillCounter: {
-					Label: alt Kill Counter
-					Tooltip: ""
 				}
 			}
 		}
