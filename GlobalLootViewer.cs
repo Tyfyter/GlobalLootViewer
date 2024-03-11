@@ -26,6 +26,7 @@ namespace GlobalLootViewer {
 		public HashSet<Type> IgnoreWhenHighlighting { get; private set; }
 		public FastFieldInfo<CustomEntryIcon, Func<bool>> _unlockCondition;
 		public MethodInfo unlockCondition;
+		public FastFieldInfo<UIBestiaryInfoItemLine, Item> _infoDisplayItem;
 		public GlobalLootViewer() {
 			IgnoreWhenHighlighting = new();
 		}
@@ -78,6 +79,7 @@ namespace GlobalLootViewer {
 			On_BestiaryDatabaseNPCsPopulator.TryGivingEntryFlavorTextIfItIsMissing += BestiaryDatabaseNPCsPopulator_TryGivingEntryFlavorTextIfItIsMissing;
 			_unlockCondition = new("_unlockCondition", BindingFlags.NonPublic | BindingFlags.Instance, true);
 			unlockCondition = typeof(GlobalLootViewer).GetMethod("AlwaysUnlocked", BindingFlags.Public | BindingFlags.Static);
+			_infoDisplayItem = new(nameof(_infoDisplayItem), BindingFlags.NonPublic | BindingFlags.Instance);
 			/*
 			On.Terraria.ID.ContentSamples.BestiaryHelper.GetSortedBestiaryEntriesList += BestiaryHelper_GetSortedBestiaryEntriesList;
 			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
@@ -209,8 +211,7 @@ namespace GlobalLootViewer {
 					};
 				}
 			}
-			if (!LootViewerConfig.HighlightConditional) return;
-			if ((info.conditions?.Count ?? 0) > 0) {
+			if (LootViewerConfig.HighlightConditional && (info.conditions?.Count ?? 0) > 0) {
 				NPC npc = new();
 				npc.SetDefaults(NPCID.SkeletonArcher);
 				/*if ((uiinfo.OwnerEntry?.Info?.Count ?? 0) > 0 && uiinfo.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
@@ -248,6 +249,33 @@ namespace GlobalLootViewer {
 				} catch (Exception) {
 					self.BackgroundColor = new Color(193, 10, 194);
 				}
+			}
+			List<IItemDropRule> rules = Main.ItemDropsDB.GetRulesForItemID(_infoDisplayItem.GetValue(self).type);
+			if (rules.Any()) {
+				UIElement dropsElement = new();
+				dropsElement.Top.Pixels = self.Height.Pixels;
+				dropsElement.Left.Set(0, 0);
+				dropsElement.Width.Set(0, 1);
+				List<DropRateInfo> list = new();
+				DropRateInfoChainFeed ratesInfo = new(1f);
+				foreach (IItemDropRule item3 in rules) {
+					item3.ReportDroprates(list, ratesInfo);
+				}
+				self.Height.Pixels += 2;
+				float height = 0;
+				foreach (DropRateInfo item2 in list) {
+					UIElement el = new ItemDropBestiaryInfoElement(item2).ProvideUIElement(uiinfo);
+					self.Height.Pixels += el.Height.Pixels + 2;
+					dropsElement.Height.Pixels += el.Height.Pixels + 2;
+					el.Top.Pixels = height;
+					el.Width.Set(0, 1);
+					el.PaddingLeft = 0;
+					el.PaddingRight = 0;
+					dropsElement.Append(el);
+					height += el.Height.Pixels + 2;
+				}
+				self.Append(dropsElement);
+				dropsElement.Recalculate();
 			}
 		}
 		static FieldInfo _droprateInfo;
