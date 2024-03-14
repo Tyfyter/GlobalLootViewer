@@ -1,5 +1,5 @@
 displayName = Bestiary Utils (Global Loot And More)
 author = Tyfyter2002
-version = 1.2.3
+version = 1.2.3.1
 side = Client
 homepage = https://tyfyter.github.io/

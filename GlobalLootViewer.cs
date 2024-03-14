@@ -230,6 +230,7 @@ namespace GlobalLootViewer {
 				try {
 					for (int i = 0; i < info.conditions.Count; i++) {
 						if (IgnoreWhenHighlighting.Contains(info.conditions[i].GetType())) continue;
+						//if (info.conditions[i] is Conditions.IsExpert && ContentSamples.CreativeHelper.GetItemGroup(ContentSamples.ItemsByType[info.itemId], out _) == ContentSamples.CreativeHelper.ItemGroup.BossBags) continue;
 						if (!info.conditions[i].CanDrop(dropInfo)) {
 							canDrop = false;
 							break;
@@ -265,6 +266,7 @@ namespace GlobalLootViewer {
 				float height = 0;
 				foreach (DropRateInfo item2 in list) {
 					UIElement el = new ItemDropBestiaryInfoElement(item2).ProvideUIElement(uiinfo);
+					if (el is null) continue;
 					self.Height.Pixels += el.Height.Pixels + 2;
 					dropsElement.Height.Pixels += el.Height.Pixels + 2;
 					el.Top.Pixels = height;
