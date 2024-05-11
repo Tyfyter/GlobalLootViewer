@@ -104,7 +104,7 @@ namespace GlobalLootViewer {
 		private bool BySearch_FitsFilter(On_Filters.BySearch.orig_FitsFilter orig, Filters.BySearch self, BestiaryEntry entry) {
 			if (orig(self, entry)) return true;
 			string search = _search.GetValue(self);
-			if (search.Length < 1) return false;
+			if (search.Length < 1) return true;
 			switch (search[0]) {
 				case '$': {
 					bool checkShowLoot = true;
