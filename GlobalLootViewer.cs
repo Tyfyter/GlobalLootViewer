@@ -1,3 +1,4 @@
+using Humanizer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
@@ -27,6 +28,8 @@ namespace GlobalLootViewer {
 		public FastFieldInfo<CustomEntryIcon, Func<bool>> _unlockCondition;
 		public MethodInfo unlockCondition;
 		public FastFieldInfo<UIBestiaryInfoItemLine, Item> _infoDisplayItem;
+		public FastFieldInfo<Filters.BySearch, string> _search;
+		static FastFieldInfo<ItemDropBestiaryInfoElement, DropRateInfo> _droprateInfo;
 		public GlobalLootViewer() {
 			IgnoreWhenHighlighting = new();
 		}
@@ -80,6 +83,7 @@ namespace GlobalLootViewer {
 			_unlockCondition = new("_unlockCondition", BindingFlags.NonPublic | BindingFlags.Instance, true);
 			unlockCondition = typeof(GlobalLootViewer).GetMethod("AlwaysUnlocked", BindingFlags.Public | BindingFlags.Static);
 			_infoDisplayItem = new(nameof(_infoDisplayItem), BindingFlags.NonPublic | BindingFlags.Instance);
+			_search = new(nameof(_search), BindingFlags.NonPublic | BindingFlags.Instance);
 			/*
 			On.Terraria.ID.ContentSamples.BestiaryHelper.GetSortedBestiaryEntriesList += BestiaryHelper_GetSortedBestiaryEntriesList;
 			NPCID.Sets.NPCBestiaryDrawOffset[GlobalLootViewerNPC.ID] = new() {
@@ -94,6 +98,39 @@ namespace GlobalLootViewer {
 			On_ContentSamples.BestiaryHelper.ShouldHideBestiaryEntry += BestiaryHelper_ShouldHideBestiaryEntry;
 			On_BestiaryDatabaseNPCsPopulator.GetExclusions += BestiaryDatabaseNPCsPopulator_GetExclusions;
 			On_NPCID.Sets.GetLeinforsEntries += Sets_GetLeinforsEntries;
+			On_Filters.BySearch.FitsFilter += this.BySearch_FitsFilter;
+		}
+
+		private bool BySearch_FitsFilter(On_Filters.BySearch.orig_FitsFilter orig, Filters.BySearch self, BestiaryEntry entry) {
+			if (orig(self, entry)) return true;
+			string search = _search.GetValue(self);
+			if (search.Length < 1) return false;
+			switch (search[0]) {
+				case '$': {
+					bool checkShowLoot = true;
+					BestiaryUICollectionInfo info = entry.UIInfoProvider.GetEntryUICollectionInfo();
+					for (int i = 0; i < entry.Info.Count; i++) {
+						if (entry.Info[i] is ItemDropBestiaryInfoElement itemDropInfo) {
+							if (checkShowLoot && itemDropInfo.ProvideUIElement(info) is null) break;
+							checkShowLoot = false;
+							int itemType = GetDropRateInfo(itemDropInfo).itemId;
+							if (search == "$" + itemType) return true;
+							List<IItemDropRule> rules = Main.ItemDropsDB.GetRulesForItemID(itemType);
+
+							List<DropRateInfo> ruleList = [];
+							DropRateInfoChainFeed ratesInfo = new(1f);
+							for (int j = 0; j < rules.Count; j++) {
+								rules[j].ReportDroprates(ruleList, ratesInfo);
+							}
+							for (int j = 0; j < ruleList.Count; j++) {
+								if (search == "$" + ruleList[j].itemId) return true;
+							}
+						}
+					}
+					break;
+				}
+			}
+			return false;
 		}
 
 		private Dictionary<int, NPCID.Sets.NPCBestiaryDrawModifiers> Sets_GetLeinforsEntries(On_NPCID.Sets.orig_GetLeinforsEntries orig) {
@@ -280,10 +317,9 @@ namespace GlobalLootViewer {
 				dropsElement.Recalculate();
 			}
 		}
-		static FieldInfo _droprateInfo;
 		static DropRateInfo GetDropRateInfo(ItemDropBestiaryInfoElement self) {
-			_droprateInfo ??= typeof(ItemDropBestiaryInfoElement).GetField("_droprateInfo", BindingFlags.NonPublic | BindingFlags.Instance);
-			return (DropRateInfo)_droprateInfo.GetValue(self);
+			_droprateInfo ??= new(nameof(_droprateInfo), BindingFlags.NonPublic | BindingFlags.Instance);
+			return _droprateInfo.GetValue(self);
 		}
 		private static UIElement ItemDropBestiaryInfoElement_ProvideUIElement(On_ItemDropBestiaryInfoElement.orig_ProvideUIElement orig, ItemDropBestiaryInfoElement self, BestiaryUICollectionInfo info) {
 			if ((info.OwnerEntry?.Info?.Count ?? 0) > 0 && info.OwnerEntry.Info[0] is NPCNetIdBestiaryInfoElement infoElement) {
