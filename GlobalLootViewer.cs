@@ -107,12 +107,10 @@ namespace GlobalLootViewer {
 			if (search.Length < 1) return true;
 			switch (search[0]) {
 				case '$': {
-					bool checkShowLoot = true;
 					BestiaryUICollectionInfo info = entry.UIInfoProvider.GetEntryUICollectionInfo();
 					for (int i = 0; i < entry.Info.Count; i++) {
 						if (entry.Info[i] is ItemDropBestiaryInfoElement itemDropInfo) {
-							if (checkShowLoot && itemDropInfo.ProvideUIElement(info) is null) break;
-							checkShowLoot = false;
+							if (itemDropInfo.ProvideUIElement(info) is null) break;
 							int itemType = GetDropRateInfo(itemDropInfo).itemId;
 							if (search == "$" + itemType) return true;
 							List<IItemDropRule> rules = Main.ItemDropsDB.GetRulesForItemID(itemType);

@@ -3,6 +3,9 @@ Highlights conditional drops that could currently drop
 Adds a kill counter to the bestiary
 
 Changelog:
+1.2.4:
+you can now search by item id by searching a $ followed by the item ID
+
 1.2.3:
 now displays item loot (such as items from treasure bags)
 
